@@ -37,4 +37,16 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/currentElevationText" />
 
+    <TextView
+        android:id="@+id/latitudeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/verticalSpeedText" />
+
+    <TextView
+        android:id="@+id/longitudeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/latitudeText" />
+
 </RelativeLayout>

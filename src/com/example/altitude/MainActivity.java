@@ -8,11 +8,17 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.widget.TextView;
 
-public class MainActivity extends Activity implements SensorEventListener {
+public class MainActivity extends Activity implements SensorEventListener,
+		LocationListener {
 
+	private LocationManager mLocationManager;
+	private Location mLocation;
 	private SensorManager mSensorManager;
 	private Sensor mPressure;
 	private TextView altitudeText;
@@ -20,6 +26,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 	private TextView localElevationText;
 	private TextView currentElevationText;
 	private TextView verticalSpeedText;
+	private TextView latitudeText;
+	private TextView longitudeText;
 	private float altitude = -100000;
 	private float oldAltitude = 0;
 	private static boolean status = true;
@@ -30,18 +38,41 @@ public class MainActivity extends Activity implements SensorEventListener {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-		mPressure = mSensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
 		altitudeText = (TextView) findViewById(R.id.altitudeText);
 		currentPressureText = (TextView) findViewById(R.id.currentPressureText);
 		localElevationText = (TextView) findViewById(R.id.localElevationText);
 		currentElevationText = (TextView) findViewById(R.id.currentElevationText);
 		verticalSpeedText = (TextView) findViewById(R.id.verticalSpeedText);
+		latitudeText = (TextView) findViewById(R.id.latitudeText);
+		longitudeText = (TextView) findViewById(R.id.longitudeText);
+
+		mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+		mPressure = mSensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+		mLocationManager = (LocationManager) this
+				.getSystemService(Context.LOCATION_SERVICE);
+		mLocation = mLocationManager
+				.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+		if (mLocation != null) {
+			onLocationChanged(mLocation);
+		}
 	}
 
 	@Override
-	public final void onAccuracyChanged(Sensor sensor, int accuracy) {
+	protected void onResume() {
+		// Register a listener for the sensor.
+		super.onResume();
+		mSensorManager.registerListener(this, mPressure,
+				SensorManager.SENSOR_DELAY_NORMAL);
+		mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+				0, 0, this);
+	}
 
+	@Override
+	protected void onPause() {
+		// Be sure to unregister the sensor when the activity pauses.
+		super.onPause();
+		mSensorManager.unregisterListener(this);
+		mLocationManager.removeUpdates(this);
 	}
 
 	/**
@@ -135,9 +166,9 @@ public class MainActivity extends Activity implements SensorEventListener {
 				&& ((System.nanoTime() * Math.pow(10, -9)) - t0) >= 1
 				&& (t0 < 78922) && oldAltitude >= altitude) {
 			double verticalSpeed = Math.abs((oldAltitude - altitude) / t0);
-			// Must be moving at least 1 m/s or 2.23694mph before verticalSpeed
+			// Must be moving at least 2 m/s or 4.47388 mph before verticalSpeed
 			// shows up on the screen
-			if (verticalSpeed > 1) {
+			if (verticalSpeed > 2) {
 				verticalSpeedText.setText("Current Speed (mph): "
 						+ roundTwoDecimals(verticalSpeed * 2.23694));
 				status = true;
@@ -146,17 +177,33 @@ public class MainActivity extends Activity implements SensorEventListener {
 	}
 
 	@Override
-	protected void onResume() {
-		// Register a listener for the sensor.
-		super.onResume();
-		mSensorManager.registerListener(this, mPressure,
-				SensorManager.SENSOR_DELAY_NORMAL);
+	public final void onAccuracyChanged(Sensor sensor, int accuracy) {
+
 	}
 
 	@Override
-	protected void onPause() {
-		// Be sure to unregister the sensor when the activity pauses.
-		super.onPause();
-		mSensorManager.unregisterListener(this);
+	public void onLocationChanged(Location location) {
+		double lat = location.getLatitude();
+		double longi = location.getLongitude();
+		latitudeText.setText("Latitude: " + Double.toString(lat));
+		longitudeText.setText("Longitude: " + Double.toString(longi));
+	}
+
+	@Override
+	public void onProviderDisabled(String provider) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onProviderEnabled(String provider) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onStatusChanged(String provider, int status, Bundle extras) {
+		// TODO Auto-generated method stub
+
 	}
 }
